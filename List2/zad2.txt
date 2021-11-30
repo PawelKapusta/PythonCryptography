@@ -1,0 +1,12 @@
+Wykład będzie zakończony egzaminem pisemnym oraz ustnym. Uzyskanie z labolatorium oceny 5 podnosi ocenę z egzaminu o 1 stopień. Natomiast uzyskanie oceny 4,5 podnosi o 0,5 stopnia. <- 273
+
+Na tej stronie będą publikowane listy zadań. Każde zadanie ma przypisaną maksymalną liczbę punktów do zdobycia za jego rozwiązanie. Rozwiązanie zadania należy zaprezentować prowadzącemu. Najpóźniej dwa tygodnie od zajęć, na których dana lista jest omawiana. Pierwsza lista będzie omawiana 14.10. Zatem zadania z niej można prezentować na zajęciach 14.10, 21.10 oraz 28.10. Po zaprezentowaniu zadań należy przesłać je na platformę Pegaz. Na poszczególne oceny należy zdobyć odpowiednio co najmniej:
+
+27060743
+
+kod:    273  27060743
+klucz:  273  25800707
+---------------------
+(+)    keyid 42860440
+
+4 2 86 0440 ale dla końcówki 442, będzie to -> NEW INSTRUCTIONS
