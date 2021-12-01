@@ -20,7 +20,7 @@ def prepare_state(msg): # Change 128-bits string to 4x4 array with bytes
     half_final = []
     helper = ''
 
-    for idx, data in enumerate(msg): # Here we change bits into bytes and
+    for idx, data in enumerate(msg): # Here we change bits into bytes
         if idx % 8 == 0 and idx > 0:
             half_final.append(bin2hex(helper, 2))
             helper = ''
@@ -29,7 +29,7 @@ def prepare_state(msg): # Change 128-bits string to 4x4 array with bytes
             half_final = []
         helper += str(data)
 
-    half_final.append(bin2hex(helper, 2))
+    half_final.append(bin2hex(helper, 2)) # we write bytes into strings that are consists of 2 digits in hex
     final.append(half_final)
 
     return final
@@ -62,7 +62,7 @@ SBox=[['63', '7c', '77', '7b', 'f2', '6b', '6f', 'c5', '30', '01', '67', '2b', '
 def SubBytes(state): # Change bytes with given SBox and state
     final = []
     half_final= []
-    for i, first_data in enumerate(state): # One byte is consists of 2 hex numbers first means row and second col in SBox
+    for i, first_data in enumerate(state): # One byte is consists of 2 hex digits first means row and second col in SBox
         for j, second_data in enumerate(first_data):
             row = int(second_data[0], 16)
             column = int(second_data[1], 16)
@@ -170,10 +170,10 @@ def multiply_GF(p,q):
 def matrix_vector_multiply(a, b):
     c = []
     for i in range(len(a)):
-        res = '0'
+        final = '0'
         for k in range(len(a)):
-            res = add_GF(res, multiply_GF(hex2bin(a[i][k]), hex2bin(b[k])))
-        c.append(bin2hex(res, 2))
+            final = add_GF(final, multiply_GF(hex2bin(a[i][k]), hex2bin(b[k])))
+        c.append(bin2hex(final, 2))
     return c
 
 def MixColumns(state):
@@ -206,52 +206,79 @@ rci = ['01', '02', '04', '08', '10', '20', '40', '80', '1b', '36']
 
 key='10111101101101001100100101100001111111111100001110000101100001110111010001010001101011111111111000011100111010011000101011100110'
 
+def RotWord(tab):
+    return tab[1:] + tab[:1]
+
+def SubWord(table):
+    tab = []
+    tmp_tab = []
+    for i in range(4):
+        tmp_string = hex2bin(table[i], 8)
+        wiersz = int(tmp_string[0:4], 2)
+        kolumna = int(tmp_string[4:8], 2)
+        tmp_tab.append(SBox[wiersz][kolumna])
+    tab.append(tmp_tab)
+    return tab
+
+def Rcon(tab, round_nr):
+    rci = ['01', '02', '04', '08', '10', '20', '40', '80', '1b', '36']
+    word = ""
+    for i in range(4):
+        word = word + hex2bin(tab[0][i], 8)
+    round_rci = hex2bin(rci[round_nr], 8)
+    round_rci += "000000000000000000000000"
+    result_str = ""
+    for i in range(32):
+        if word[i] == round_rci[i]:
+            result_str += "0"
+        if word[i] != round_rci[i]:
+            result_str += "1"
+
+    result = [bin2hex(result_str[0:8], 2), bin2hex(result_str[8:16], 2), bin2hex(result_str[16:24], 2),
+              bin2hex(result_str[24:32], 2)]
+    return result
+
+
+def xor(tab_hex1, tab_hex2):
+    hex1_0 = tab_hex1[0]
+    hex1_1 = tab_hex1[1]
+    hex1_2 = tab_hex1[2]
+    hex1_3 = tab_hex1[3]
+
+    hex2_0 = tab_hex2[0]
+    hex2_1 = tab_hex2[1]
+    hex2_2 = tab_hex2[2]
+    hex2_3 = tab_hex2[3]
+
+    bin_str1 = hex2bin(hex1_0, 8) + hex2bin(hex1_1, 8) + hex2bin(hex1_2, 8) + hex2bin(hex1_3, 8)
+    bin_str2 = hex2bin(hex2_0, 8) + hex2bin(hex2_1, 8) + hex2bin(hex2_2, 8) + hex2bin(hex2_3, 8)
+
+    result = ""
+    for i in range(len(bin_str1)):
+        if bin_str1[i] == bin_str2[i]:
+            result += "0"
+        if bin_str1[i] != bin_str2[i]:
+            result += "1"
+    result_tab = [bin2hex(result[0:8], 2), bin2hex(result[8:16], 2), bin2hex(result[16:24], 2),
+                  bin2hex(result[24:32], 2)]
+    return result_tab
+
 def KeyExpansion(key):
 
-    return [[['bd', 'b4', 'c9', '61'],
-  ['ff', 'c3', '85', '87'],
-  ['74', '51', 'af', 'fe'],
-  ['1c', 'e9', '8a', 'e6']],
- [['a2', 'ca', '47', 'fd'],
-  ['5d', '09', 'c2', '7a'],
-  ['29', '58', '6d', '84'],
-  ['35', 'b1', 'e7', '62']],
- [['68', '5e', 'ed', '6b'],
-  ['35', '57', '2f', '11'],
-  ['1c', '0f', '42', '95'],
-  ['29', 'be', 'a5', 'f7']],
- [['c2', '58', '85', 'ce'],
-  ['f7', '0f', 'aa', 'df'],
-  ['eb', '00', 'e8', '4a'],
-  ['c2', 'be', '4d', 'bd']],
- [['64', 'bb', 'ff', 'eb'],
-  ['93', 'b4', '55', '34'],
-  ['78', 'b4', 'bd', '7e'],
-  ['ba', '0a', 'f0', 'c3']],
- [['13', '37', 'd1', '1f'],
-  ['80', '83', '84', '2b'],
-  ['f8', '37', '39', '55'],
-  ['42', '3d', 'c9', '96']],
- [['14', 'ea', '41', '33'],
-  ['94', '69', 'c5', '18'],
-  ['6c', '5e', 'fc', '4d'],
-  ['2e', '63', '35', 'db']],
- [['af', '7c', 'f8', '02'],
-  ['3b', '15', '3d', '1a'],
-  ['57', '4b', 'c1', '57'],
-  ['79', '28', 'f4', '8c']],
- [['1b', 'c3', '9c', 'b4'],
-  ['20', 'd6', 'a1', 'ae'],
-  ['77', '9d', '60', 'f9'],
-  ['0e', 'b5', '94', '75']],
- [['d5', 'e1', '01', '1f'],
-  ['f5', '37', 'a0', 'b1'],
-  ['82', 'aa', 'c0', '48'],
-  ['8c', '1f', '54', '3d']],
- [['23', 'c1', '26', '7b'],
-  ['d6', 'f6', '86', 'ca'],
-  ['54', '5c', '46', '82'],
-  ['d8', '43', '12', 'bf']]]
+    result = []
+    subkey1 = prepare_state(key)
+    result.append(subkey1)
+    last_subkey = subkey1
+    for i in range(10):
+        tmp_subkey = []
+        tmp_subkey.append(xor(Rcon(SubWord(RotWord(last_subkey[3])), i), last_subkey[0]))
+        tmp_subkey.append(xor(tmp_subkey[0], last_subkey[1]))
+        tmp_subkey.append(xor(tmp_subkey[1], last_subkey[2]))
+        tmp_subkey.append(xor(tmp_subkey[2], last_subkey[3]))
+        result.append(tmp_subkey)
+        last_subkey = tmp_subkey
+
+    return result
 
 
 print(KeyExpansion(key)==
