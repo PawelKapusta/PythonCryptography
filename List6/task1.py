@@ -2,6 +2,7 @@ import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
 import IPython.display
+import string
 
 print("\nTask1\n--------------------------------------------------------")
 
@@ -85,10 +86,9 @@ FP = [39,  7, 47, 15, 55, 23, 63, 31, 38,  6, 46, 14, 54, 22, 62, 30, 37,
         9, 49, 17, 57, 25, 32,  0, 40,  8, 48, 16, 56, 24]
 
 def bin2dec(bin_str):
-    return int(bin_str, 2) # The int() method returns an integer object from any number or string. No parameters) returns 0
-                           # (If base given) treats the string in the given base (0, 2, 8, 10, 16)
+    return int(bin_str, 2)
 
-def permute(k,perm): # go through perm array get indexes and append to string elements from k array
+def permute(k,perm):
     final = []
     for i in perm:
         final.append(k[i])
@@ -98,8 +98,7 @@ def shift_left(tab,n):
     final = tab[n:] + tab[:n]
     return final
 
-def key_schedule(key): # Gets 64- bits key and returns list of 16 generated subkeys like bits string
-                       # Algorithm as it is shown on schedule https://cs.if.uj.edu.pl/edu/kryptografia/Lista3.html
+def key_schedule(key):
     final = []
     new_key = permute(key, PC1)
     left,right = new_key[:len(new_key)//2], new_key[len(new_key)//2:]
@@ -117,45 +116,46 @@ def xor(bin_str1,bin_str2):
     final = format(binary_operator, '0' + str(len(bin_str1)) + 'b')
     return final
 
-def F(right, subkey): # gets 32 bits string and 48 bits subkey string -> returns 32 bits string
-    returned_permute_function = permute(right, E) # returns 48 bits string
-    returned_xor_function = xor(returned_permute_function, subkey) # add subkey with xor function
+def F(right, subkey):
+    returned_permute_function = permute(right, E)
+    returned_xor_function = xor(returned_permute_function, subkey)
     final = ''
-    for i in range(0, 8): # because Sbox has 8 smaller lists
-        subgroup = returned_xor_function[i*6 : (i+1)*6] # divide it into 8 groups, every with 6 bits
-        binary_number = subgroup[0] + subgroup[-1] # we take first and last bits in each list -> means row's number in matrix
-        first_decimal = bin2dec(binary_number) # convert to decimal number
-        binary_number = subgroup[1:-1] # we take 4 bits in the middle -> means column's number in matrix
-        second_decimal = bin2dec(binary_number) # convert to decimal number
-        find_element = dec2bin(SBox[i][first_decimal][second_decimal], 4) # we are finding this 4 bits element
-        final = final + find_element # we append all to one 32 bits string
-    return permute(final, P) # and we return the result of permute function of P
+    for i in range(0, 8):
+        subgroup = returned_xor_function[i*6 : (i+1)*6]
+        binary_number = subgroup[0] + subgroup[-1]
+        first_decimal = bin2dec(binary_number)
+        binary_number = subgroup[1:-1]
+        second_decimal = bin2dec(binary_number)
+        find_element = dec2bin(SBox[i][first_decimal][second_decimal], 4)
+        final = final + find_element
+    return permute(final, P)
 
-def Feistel(message, subkeys, F): # message 64 bits string message , 16 subkeys bits string, F a function -> returns encoded bits string message
-    for i in range(16): # 16 times
+def Feistel(message, subkeys, F):
+    for i in range(16):
         left,right = message[:len(message)//2], message[len(message)//2:]
         returned_values = F(right, subkeys[i])
         left = xor(left, returned_values)
-        if i < 15: # in last round miss this point
+        if i < 15:
             left, right = right, left
         message = left + right
     return message
 
-def DES(message, subkeys): # implementation of DES code, message is 64 bits string and 16 subkeys 48 bits string each -> returns 64 bits string after encoded
+def DES(message, subkeys):
     returned_permute_function = permute(message, IP)
     returned_feistel = Feistel(returned_permute_function, subkeys, F)
     return permute(returned_feistel, FP)
 
-img_string = ''
+img_t = ''
 start = 0
 end = 64
-iteration_size = int(len(bits) / 64)
+iter_size = int(len(bits) / 64)
 
-for _ in range(iteration_size):
+for _ in range(iter_size):
     sub_bits = bits[start:end]
 
-    encoded = DES(sub_bits, key_schedule(key))
-    img_string += encoded
+    encoded = DES(sub_bits, key_schedule(key)) # message is 64 bits string and 16 subkeys 48 bits string each -> returns 64 bits string after encoded
+                                               # keySchedule - Gets 64- bits key and returns list of 16 generated subkeys like bits string
+    img_t += encoded
 
     start = end
     end = end + 64
@@ -166,7 +166,7 @@ def split_img(img_bin,n):
         img_split.append(img_bin[i:i+n])
     return img_split
 
-img=np.array([bin2dec(b) for b in split_img(img_string,8)]).reshape(np.array(img).shape)
+img=np.array([bin2dec(b) for b in split_img(img_t,8)]).reshape(np.array(img).shape)
 Image.fromarray(np.uint8(np.array(img))).show()
 
 print("\nTask2\n--------------------------------------------------------")
@@ -174,23 +174,27 @@ print("\nTask2\n--------------------------------------------------------")
 iv='0011111111001100000111011100110100100101010100000111010001000110'
 msg='1000110001101011011101110010100111101111101100111100001010100001011111110100000100100000111011001011000001011100110111101111110100000000100101011101110010000000110011011100000111000110011100111000010111111111011111000110001010101001101111110000010110011011'
 
-def CBC(msg,key,iv):
+def CBC(msg, key, iv):
     start = 0
     end = 64
-    iteration_size = int(len(msg) / 64)
-    final = ''
+    iter_size = int(len(msg) / 64)
+    res = ''
 
-    for _ in range(iteration_size):
+    for _ in range(iter_size):
         sub_bits = msg[start:end]
-        iv = xor(sub_bits, iv)
+        iv = xor(sub_bits, iv) # binary operation
 
         encoded = DES(iv, key_schedule(key))
         iv = encoded
-        final += encoded
+        res += encoded
 
         start = end
         end = end + 64
-    return final
+    return res
+
+img_t = CBC(bits, key, iv)
+img=np.array([bin2dec(b) for b in split_img(img_t,8)]).reshape(np.array(img).shape)
+Image.fromarray(np.uint8(np.array(img))).show()
 
 print(CBC(msg,key,iv)=='1111101000110001101111001100101101011001101010001101010101100111011001100111010011001011100001001111011000001111110010011110011101010000101011010011011100011110011011001011100100011100011001011101110011110001110100010111001100100010111101011111101010111000')
 
@@ -199,10 +203,10 @@ print("\nTask3\n--------------------------------------------------------")
 def CBCde(msg,key,iv):
     start = 0
     end = 64
-    iteration_size = int(len(msg) / 64)
-    final = ''
+    iter_size = int(len(msg) / 64)
+    res = ''
 
-    for _ in range(iteration_size):
+    for _ in range(iter_size):
         sub_msg = msg[start:end]
 
         scheduled = key_schedule(key)
@@ -211,14 +215,14 @@ def CBCde(msg,key,iv):
         encoded = DES(sub_msg, scheduled)
         xored = xor(encoded, iv)
 
-        final += xored
+        res += xored
 
         iv = sub_msg
         start = end
         end = end + 64
-    return final
+    return res
 
-img_t = CBCde(img_string, key, iv)
+img_t = CBCde(img_t, key, iv)
 img=np.array([bin2dec(b) for b in split_img(img_t,8)]).reshape(np.array(img).shape)
 Image.fromarray(np.uint8(np.array(img))).show()
 
@@ -243,3 +247,124 @@ def OFB(msg,key,iv):
 print(OFB(msg,key,iv)=='1100001001010001100110011101011100100011010101010111010010010011100101001100010001000100011110101011011101001110000000111000111101000101101111011100001111001100110010101110100110111000111000001100110010110101111101101100101110001010111011111110101100110000')
 
 print(OFB(OFB(msg,key,iv),key,iv)==msg)
+
+print("\nTask5\n--------------------------------------------------------")
+
+def bin2hex(bin_str, pad):
+    result = f"{int(bin_str, 2):0{pad}x}"
+    return result
+
+def padding(msg, L): # function adds padding to message, messages are hex byte arrays, L is length of side that message need to be "dopełniona"
+    message_length = len(msg)
+    multiply_L = L
+    while multiply_L < message_length:
+        multiply_L = multiply_L + L
+    to_add = multiply_L - message_length
+    for i in range(to_add):
+        msg.append(f"{bin2hex(bin(to_add),2)}")
+    return msg
+
+print(padding(['ed', 'd2', '76', 'dc', '2b', 'd6', 'ff', 'a6', '35', '35', 'be', '1a', '26'],16) ==
+              ['ed', 'd2', '76', 'dc', '2b', 'd6', 'ff', 'a6', '35', '35', 'be', '1a', '26', '03', '03', '03'])
+print(padding(['54', '10', '38', 'c0', 'cc', 'e7', '8d', '8f', '70', '22'],16) ==
+              ['54', '10', '38', 'c0', 'cc', 'e7', '8d', '8f', '70', '22', '06', '06', '06', '06', '06', '06'])
+print(padding(['8e', 'ba', 'e3', 'd9', '76', '08', 'f1', 'd2', 'ca', '09', '39', '6b', 'b0', '4d', '36', '94', '49', '69', '30', '57', '3e', '9d', 'df', 'd7', 'fa', 'aa', '95', '5c', '60', '5f'],16) ==
+              ['8e', 'ba', 'e3', 'd9', '76', '08', 'f1', 'd2', 'ca', '09', '39', '6b', 'b0', '4d', '36', '94', '49', '69', '30', '57', '3e', '9d', 'df', 'd7', 'fa', 'aa', '95', '5c', '60', '5f', '02', '02'])
+print(padding(['1e', '17', '53', '69'],8)==
+              ['1e', '17', '53', '69', '04', '04', '04', '04'])
+print(padding(['42', 'f2', '07', 'c7', '32', 'd8', '10', '7e', 'a5', '53', '0d', '18'],8)==
+              ['42', 'f2', '07', 'c7', '32', 'd8', '10', '7e', 'a5', '53', '0d', '18', '04', '04', '04', '04'])
+
+print("\nTask6\n--------------------------------------------------------")
+
+def oracle(msg, L): #functoin check if we have correct padding to message
+    last_in_message= msg[-1]
+    if len(msg) % L:
+        print("Sth went not well")
+    if last_in_message == "00":
+        return False
+    for i in range(int(last_in_message, 16)):
+        if msg[-(i + 1)] != last_in_message:
+            return False
+    return True
+
+print(oracle(['ed', 'd2', '76', 'dc', '2b', 'd6', 'ff', 'a6', '35', '35', 'be', '1a', '26', '03', '03', '03'],16) == True)
+print(oracle(['54', '10', '38', 'c0', 'cc', 'e7', '8d', '8f', '70', '22', 'aa', '06', '06', '06', '06', '06'],16) == False)
+print(oracle(['8e', 'ba', 'e3', 'd9', '76', '08', 'f1', 'd2', 'ca', '09', '39', '6b', 'b0', '4d', '36', '94', '49', '69', '30', '57', '3e', '9d', 'df', 'd7', 'fa', 'aa', '95', '5c', '60', '5f', '02', '02'],16) == True)
+print(oracle(['1e', '17', '53', '04', '04', '04', '04', '04'],8) == True)
+print(oracle(['1e', '17', '53', '04', '04', '04', '04', '00'],8) == False)
+print(oracle(['1e', '17', '53', '04', '04', '04', '04', 'aa'],8) == False)
+print(oracle(['42', 'f2', '07', 'c7', '32', 'd8', '10', '7e', 'a5', '53', '0d', '18', '04', '04', '04', '04'],8) == True)
+print(oracle(['42', 'f2', '07', 'c7', '32', 'd8', '10', '7e', 'a5', '53', '0d', '18', '04', '00', '04', '04'],8) == False)
+
+print("\nTask7\n--------------------------------------------------------")
+
+msg_enc = ['be', '21', 'a2', 'd7', '9d', 'c7', '8d', 'a3']
+iv = ['36', '92', '8b', '53', 'ef', 'f2', '7a', 'e4']
+
+def hex2bin(str):
+   bin = ['0000','0001','0010','0011',
+         '0100','0101','0110','0111',
+         '1000','1001','1010','1011',
+         '1100','1101','1110','1111']
+   aa = ''
+   for i in range(len(str)):
+      aa += bin[int(str[i],base=16)]
+   return aa
+
+print(bin2hex(xor(xor(hex2bin('36'), hex2bin('07')), hex2bin('08')), 0))
+
+def msgbin_to_msghex(msg):
+    return [format(int(a,2),'02x') for a in [msg[8*i:8*i+8] for i in range(8)]]
+
+def msghex_to_msgbin(msg):
+    return ''.join([format(int(i,16),'08b') for i in msg])
+
+def server(msg_enc, iv): # msg encoded in CBC mode with iv vector and unknown key , and server returns true if padding is correct
+    key = '0111101000001010110010000001010101111111100000000000101000110001'
+    msg = CBCde(msghex_to_msgbin(msg_enc), key, msghex_to_msgbin(iv))
+    return oracle(msgbin_to_msghex(msg),8)
+
+iv = ['36', '39', '59', '0a', 'a0', 'f9', '71', 'ef']
+
+for i in range(16): # Here we generate all numbers from 00 to FF and if returns true that means that gives some padding
+    for j in range(16):
+        iv[0] = hex(i).replace('0x','') + hex(j).replace('0x','')
+        if server(msg_enc, iv):
+            print(hex(i).replace('0x','') + hex(j).replace('0x',''))
+print("------")
+print(bin2hex(xor(hex2bin('ac'), hex2bin('04')),0))
+print(bin2hex(xor(hex2bin('a8'), hex2bin('ef')),0))
+
+print(bin2hex(xor(hex2bin('07'), hex2bin('05')),0))
+print(bin2hex(xor(hex2bin('02'), hex2bin('53')),0))
+
+print(bin2hex(xor(hex2bin('57'), hex2bin('06')),0))
+print(bin2hex(xor(hex2bin('51'), hex2bin('8b')),0))
+
+print(bin2hex(xor(hex2bin('36'), hex2bin('07')),0))
+print(bin2hex(xor(hex2bin('31'), hex2bin('92')),0))
+
+print(bin2hex(xor(hex2bin('4c'), hex2bin('08')),0))
+print(bin2hex(xor(hex2bin('44'), hex2bin('36')),0))
+print("The message is: 72 a3 da 51 47 03 03 03")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

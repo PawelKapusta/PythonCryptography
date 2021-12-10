@@ -181,7 +181,7 @@ def MixColumns(state):
     helper_res = []
     for idx in range(len(state)):
         column = helper_c[:, idx]
-        res = matrix_vector_multiply(A, column) # Multiply each column with A matrix
+        res = matrix_vector_multiply(A, column) # Multiply each column from state with A matrix
         helper_res.append(res)
 
     res = []
@@ -205,23 +205,23 @@ print("\nTask5\n--------------------------------------------------------")
 rci = ['01', '02', '04', '08', '10', '20', '40', '80', '1b', '36']
 
 key='10111101101101001100100101100001111111111100001110000101100001110111010001010001101011111111111000011100111010011000101011100110'
+rci = ['01', '02', '04', '08', '10', '20', '40', '80', '1b', '36']
 
 def RotWord(tab):
     return tab[1:] + tab[:1]
 
 def SubWord(table):
     tab = []
-    tmp_tab = []
+    temporary = []
     for i in range(4):
-        tmp_string = hex2bin(table[i], 8)
-        wiersz = int(tmp_string[0:4], 2)
-        kolumna = int(tmp_string[4:8], 2)
-        tmp_tab.append(SBox[wiersz][kolumna])
-    tab.append(tmp_tab)
+        string = hex2bin(table[i], 8)
+        wiersz = int(string[0:4], 2)
+        kolumna = int(string[4:8], 2)
+        temporary.append(SBox[wiersz][kolumna])
+    tab.append(temporary)
     return tab
 
 def Rcon(tab, round_nr):
-    rci = ['01', '02', '04', '08', '10', '20', '40', '80', '1b', '36']
     word = ""
     for i in range(4):
         word = word + hex2bin(tab[0][i], 8)
@@ -234,51 +234,42 @@ def Rcon(tab, round_nr):
         if word[i] != round_rci[i]:
             result_str += "1"
 
-    result = [bin2hex(result_str[0:8], 2), bin2hex(result_str[8:16], 2), bin2hex(result_str[16:24], 2),
-              bin2hex(result_str[24:32], 2)]
-    return result
-
+    final = [bin2hex(result_str[0:8], 2), bin2hex(result_str[8:16], 2), bin2hex(result_str[16:24], 2), bin2hex(result_str[24:32], 2)]
+    return final
 
 def xor(tab_hex1, tab_hex2):
     hex1_0 = tab_hex1[0]
     hex1_1 = tab_hex1[1]
     hex1_2 = tab_hex1[2]
     hex1_3 = tab_hex1[3]
-
     hex2_0 = tab_hex2[0]
     hex2_1 = tab_hex2[1]
     hex2_2 = tab_hex2[2]
     hex2_3 = tab_hex2[3]
-
     bin_str1 = hex2bin(hex1_0, 8) + hex2bin(hex1_1, 8) + hex2bin(hex1_2, 8) + hex2bin(hex1_3, 8)
     bin_str2 = hex2bin(hex2_0, 8) + hex2bin(hex2_1, 8) + hex2bin(hex2_2, 8) + hex2bin(hex2_3, 8)
-
-    result = ""
+    final = ""
     for i in range(len(bin_str1)):
         if bin_str1[i] == bin_str2[i]:
-            result += "0"
+            final += "0"
         if bin_str1[i] != bin_str2[i]:
-            result += "1"
-    result_tab = [bin2hex(result[0:8], 2), bin2hex(result[8:16], 2), bin2hex(result[16:24], 2),
-                  bin2hex(result[24:32], 2)]
-    return result_tab
+            final += "1"
+    return [bin2hex(final[0:8], 2), bin2hex(final[8:16], 2), bin2hex(final[16:24], 2),bin2hex(final[24:32], 2)]
 
-def KeyExpansion(key):
-
-    result = []
-    subkey1 = prepare_state(key)
-    result.append(subkey1)
+def KeyExpansion(key): # From given key its generating subkeys that are write in 4x4 array with bytes in hex system
+    final = []
+    subkey1 = prepare_state(key) # We divide key into 32 bites blocks and then we generate 11 subkeys first one is input key in each rounds we generate another subkeys
+    final.append(subkey1)
     last_subkey = subkey1
     for i in range(10):
-        tmp_subkey = []
-        tmp_subkey.append(xor(Rcon(SubWord(RotWord(last_subkey[3])), i), last_subkey[0]))
-        tmp_subkey.append(xor(tmp_subkey[0], last_subkey[1]))
-        tmp_subkey.append(xor(tmp_subkey[1], last_subkey[2]))
-        tmp_subkey.append(xor(tmp_subkey[2], last_subkey[3]))
-        result.append(tmp_subkey)
-        last_subkey = tmp_subkey
-
-    return result
+        temporary = []
+        temporary.append(xor(Rcon(SubWord(RotWord(last_subkey[3])), i), last_subkey[0])) # RotWord is similar to shift_left, but it is working on one word and moves it by 1 byte
+        temporary.append(xor(temporary[0], last_subkey[1])) # SubWord is similar to SubBytes but it is working on word not state
+        temporary.append(xor(temporary[1], last_subkey[2])) # Rcon function with helping XOR operation is adding word with element from given RCi array
+        temporary.append(xor(temporary[2], last_subkey[3]))
+        final.append(temporary)
+        last_subkey = temporary
+    return final
 
 
 print(KeyExpansion(key)==
@@ -329,7 +320,7 @@ print(KeyExpansion(key)==
 
 print("\nTask6\n--------------------------------------------------------")
 
-def AddRoundKey(state,subkey):
+def AddRoundKey(state,subkey): # We add subkey to state which are 4x4 arrays that have bytes (strings of bites ) and we are adding it with alternatywy wykluczającej, we are adding these arrays like matrixes element by element
     final = []
     half_final = []
     for i, first_data in enumerate(state):
@@ -354,31 +345,26 @@ print(AddRoundKey([['83', '4d', 'e4', '62'],
 
 print("\nTask7\n--------------------------------------------------------")
 
-def AES(msg,subkeys):
-    state = prepare_state(msg)
-    # init
-    state = AddRoundKey(state, subkeys[0])
-
-    # 9 rounds
+def AES(msg,subkeys): # that encode the message with subkeys
+    state = prepare_state(msg) # change state with prepare_state
+    state = AddRoundKey(state, subkeys[0]) # add subkey to state
     for i in range(1, 10):
         sub = SubBytes(state)
         shift = ShiftRows(sub)
         mix = MixColumns(shift)
-        state = AddRoundKey(mix, subkeys[i])
+        state = AddRoundKey(mix, subkeys[i]) # Do SubBytes, ShiftRows, MixColumns and add state in 9 rounds
 
-    # final
-    sub = SubBytes(state)
+    sub = SubBytes(state) # last round we use SubBytes, ShiftRows and add subkey
     shift = ShiftRows(sub)
     state = AddRoundKey(shift, subkeys[10])
-
-    res = ''
+    final = ''
     for i in state:
         for j in i:
-            res += hex2bin(j, 8)
-    return res
+            final += hex2bin(j, 8) # change state to bin number
+    return final
 
 msg='01000110000010100000101110100010110111111100000001111011000100010010001111010010010011011101110011010011010000000100001100001001'
 key='10111101101101001100100101100001111111111100001110000101100001110111010001010001101011111111111000011100111010011000101011100110'
-#msg i key to zmienne z poprzednich zadań
+
 subkeys=KeyExpansion(key)
 print(AES(msg,subkeys)=='10011011111001010110001100111101110001011011101000011101001000001010111100001110011000010000111101111000010101011111010000001101')
