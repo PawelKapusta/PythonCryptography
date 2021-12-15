@@ -6,7 +6,7 @@ print("\nTask1\n--------------------------------------------------------")
 g=5
 p=23
 
-a=random.randint(2, p - 1)
+a=random.randint(2, p - 1) # alicja wybiera losowy element z grupy Zp
 
 def dec2bin(dec, pad=0):
     return format(int(dec),'0'+str(pad)+'b')
@@ -22,12 +22,12 @@ def pow_mod(x,n,m):
 
     return p
 
-A=pow_mod(g, a, p)
+A=pow_mod(g, a, p) # oblicza  A w grupie  Zp , czyli  A=g^a mod p :
 
-b=random.randint(2, p - 1)
+b=random.randint(2, p - 1) # To samo robi Bob, wybiera losowy elemnt grupy  b  i oblicza  B=g^b :
 B=pow_mod(g, b, p)
 
-k_B=pow_mod(A, b, p)
+k_B=pow_mod(A, b, p) # obliczamy k_B oraz k_A
 k_A=pow_mod(B, a, p)
 
 print(k_A == k_B)
@@ -37,7 +37,7 @@ print("\nTask2\n--------------------------------------------------------")
 def dec2bin(dec, pad=0):
     return format(int(dec),'0'+str(pad)+'b')
 
-def pow_mod(x,n,m):
+def pow_mod(x,n,m): # oblicza nam x^n mod m
     p = 1
     bin_str = dec2bin(n)
     for i in bin_str:
@@ -55,7 +55,7 @@ print(pow_mod(3**99,10**100,7)==1)
 
 print("\nTask3\n--------------------------------------------------------")
 
-def inv(p,n):
+def inv(p,n): # Znajduje dla danej liczby p i n licze e ze d*e = 1 mod n
     (x0, x1, y0, y1) = (1, 0, 0, 1)
     while n > 0:
         (q, p, n) = (p // n, n, p % n)
@@ -73,7 +73,7 @@ print(inv(3,11)==4)
 
 print("\nTask4\n--------------------------------------------------------")
 
-def Fermat_test(p,k):
+def Fermat_test(p,k): # Dla danej liczby p sprawdza za pomocą k rund czy liczba jest pierwsza
     for _ in range(k):
         a = random.randint(2, p-2)
 
@@ -99,12 +99,10 @@ p=241307804769001318415537790669394432551022039371606577233944511748081414038589
 
 q=26660613491521684005574100352062919789979599401844483402246984186988668019447679726081352452799126206997555710356464145743285983450292024894053538317854159
 
-def key_gen(p,q):
+def key_gen(p,q): # generuje klucze w ramach algorytmu RSA, dla podanych dużych liczb pierwszych p i q zwraca parę kluczy w postaci krotki (n, e , d), postepujemy zgodnie ze schematem w opisie zadania
     n = p * q
     euler_n = (q - 1) * (p - 1)
 
-    # hardcoded to pass a test
-    # e = gen_p(1, euler_n)
     e = 65537
 
     d = inv(e, euler_n)
@@ -122,9 +120,9 @@ n=643341411543391711051425916925550311012265711300705520200325675109446836493100
 e=208350389615113762788111263490297665109355377830736643503856528470357220208290606069461253441671763980314762012190291145414733535673548961910772961435143582756267132618995046438684186252163655289035228721360753675271711075033036291412267917936062230585687839901652792581357105686274730618278123193067279319927
 d=502029145905912565237092248595126620632487653124329465045136187249992350554283419049087834111437813928483679744364041267436534897197233494007405790027156754593648940515350675746678776751088177077690779849077150675864299782170211270887279535225267271652686426692746042361641530130191025648848746210219401813175
 
-def enc(x,e,n):
+def enc(x,e,n): # podaną liczbę x - wiadomość szyfruje za pomocą klucza publicznego (e, n)
     return pow_mod(x, e, n)
-def dec(y,d,n):
+def dec(y,d,n): # podaną liczbę y - szyfrogram deszyfruje za pomoca klucza prywatnego (d, n)
     return pow_mod(y, d, n)
 
 print(enc(17,e,n)==353230656531616665332116231509462661273082280099289165110086677972943261270362976411810450837847461343993316190457124231852161403281191913264230575248953060776390559207669288928802429515257729255854064666904850354451664771847425807841069296028397747015905377374208615536177338019721932982992946095124218548486)
